@@ -1,5 +1,4 @@
 const resetButton = document.getElementById('reset-button');
-const returnButton = document.getElementById('return-button');
 const nextLevelButton = document.getElementById('next-level-button');
 const gameContainer = document.getElementById('game-container');
 const canvas = document.getElementById('gameCanvas');
@@ -564,21 +563,34 @@ function draw() {
     drawPaddle();
     drawParticles(); // Draw all active particles
     
-    // Draw instruction when ball is stuck to paddle
-    if (ballStuckToPaddle && gameRunning) {
-        drawReleaseInstruction();
+    // Only show start instruction when game is not running
+    // Never show both instructions at the same time
+    if (!gameRunning && ballStuckToPaddle) {
+        drawStartInstruction();
     }
 }
 
 function gameLoop() {
-    console.log("gameLoop: Frame start"); // Log: Animation frame started
+    // Exit early if game is not running
     if (!gameRunning) {
-        console.log("gameLoop: Exiting (gameRunning is false)"); // Log: Loop stop condition
+        console.log("gameLoop: Exiting (gameRunning is false)");
         return;
     }
+    
+    // First clear the canvas completely
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Update game state
     update();
-    draw();
-    // Use requestAnimationFrame for smoother animation
+    
+    // Draw game elements in the correct order
+    drawGridBackground();
+    drawBricks();
+    drawBall();
+    drawPaddle();
+    drawParticles();
+    
+    // Request next frame
     gameInterval = requestAnimationFrame(gameLoop);
 }
 
@@ -595,14 +607,14 @@ function stopTimer() {
 }
 
 function startGame() {
-    // Freeze the game first
-    freezeGameState();
-    
     try {
         if (gameRunning) {
             console.log("Game already running, returning");
             return;
         }
+        
+        // Set gameRunning flag immediately to prevent multiple starts
+        gameRunning = true;
         
         // Disable speed selector during gameplay
         speedSelector.disabled = true;
@@ -622,19 +634,16 @@ function startGame() {
         timerStarted = false;
         timerElement.textContent = secondsElapsed;
         
-        // Manually draw the first frame
-        drawBricks();
-        drawBall();
-        drawPaddle();
+        console.log("Game initialized");
         
-        console.log("Initial state drawn");
-        
-        // Start the game (but not the timer yet)
-        gameRunning = true;
-        gameLoop();
+        // Start the game loop without manual drawing
+        // Let the game loop handle the first frame completely
+        requestAnimationFrame(gameLoop);
     } catch (error) {
         console.error("Error in startGame:", error);
         alert("Error starting game: " + error.message);
+        // Reset gameRunning flag if there was an error
+        gameRunning = false;
     }
 }
 
@@ -733,27 +742,28 @@ function drawGridBackground() {
     }
 }
 
-// Function to draw the release instruction
-function drawReleaseInstruction() {
+// Function to draw instructions about starting the game
+function drawStartInstruction() {
     ctx.save(); // Save the current state
     
-    // Draw instruction text
+    const text = "CLICK OR PRESS ANY KEY TO START";
     ctx.font = "18px 'Orbitron'";
     ctx.fillStyle = "#00e5ff";
     ctx.textAlign = "center";
-    const text = "CLICK or PRESS ANY KEY to LAUNCH";
     
-    // Add glow effect
+    // Add glow effect first
     ctx.shadowColor = "#00e5ff";
     ctx.shadowBlur = 10;
     
     // Position text above the ball
+    // Draw text only ONCE with the shadow
     ctx.fillText(text, canvas.width / 2, canvas.height - 150);
     
     // Add animated arrow pointing to the ball
     const arrowY = canvas.height - 120 + Math.sin(Date.now() / 300) * 5; // Subtle animation
     
-    // Draw the arrow
+    // Draw the arrow (reset shadow before drawing)
+    ctx.shadowBlur = 0; // Reset shadow for arrow
     ctx.beginPath();
     ctx.moveTo(canvas.width / 2, arrowY);
     ctx.lineTo(canvas.width / 2 - 10, arrowY - 10);
@@ -761,60 +771,26 @@ function drawReleaseInstruction() {
     ctx.closePath();
     ctx.fill();
     
-    ctx.restore(); // Restore the original state
+    ctx.restore(); // Restore the original state (removes shadow settings automatically)
 }
 
-// Function to freeze the game state
-function freezeGameState() {
-    // Draw one last frame to ensure everything is visible
-    // for the blurred background
-    draw();
-    
-    // Stop the game loop and timer
-    gameRunning = false;
-    cancelAnimationFrame(gameInterval);
-    stopTimer();
-}
+// Modified canvas click event to start game if not running and prevent double-processing
+canvas.addEventListener('click', function(e) {
+    if (!gameRunning) {
+        startGame();
+    } else if (ballStuckToPaddle) {
+        releaseBall();
+    }
+});
 
-// Function to reset the game
-function resetGame() {
-    // Stop any existing game
-    freezeGameState();
-    
-    // Reset game variables
-    score = 0;
-    lives = INITIAL_LIVES;
-    secondsElapsed = 0;
-    timerStarted = false;
-    
-    // Reset ball and paddle positions
-    paddleX = (canvas.width - PADDLE_WIDTH) / 2;
-    ballX = canvas.width / 2;
-    ballY = canvas.height - PADDLE_HEIGHT - BALL_RADIUS - 2;
-    ballStuckToPaddle = true;
-    
-    // Clear the ball trail
-    ballTrail = [];
-    
-    // Reset ball speed based on selector
-    ballBaseSpeed = parseInt(speedSelector.value);
-    ballDX = ballBaseSpeed * (Math.random() < 0.5 ? 1 : -1);
-    ballDY = -ballBaseSpeed;
-    
-    // Update UI
-    scoreElement.textContent = score;
-    timerElement.textContent = secondsElapsed;
-    updateLivesDisplay();
-    
-    // Reinitialize bricks
-    initializeBricks();
-    
-    // Draw the reset game state
-    draw();
-    
-    // Start game automatically
-    startGame();
-}
+// Modified key event for cleaner handling
+document.addEventListener('keydown', function(e) {
+    if (!gameRunning) {
+        startGame();
+    } else if (ballStuckToPaddle) {
+        releaseBall();
+    }
+});
 
 // --- Event Listeners ---
 resetButton.addEventListener('click', resetGame);
@@ -834,11 +810,6 @@ playAgainButton.addEventListener('click', function() {
         confettiCanvas.remove();
     }
     startGame();
-});
-returnButton.addEventListener('click', function() {
-    gameOverScreen.style.display = 'none';
-    removeOverlayBackground();
-    resetGame();
 });
 nextLevelButton.addEventListener('click', function() {
     // In a future version this would load the next level
@@ -863,13 +834,6 @@ document.addEventListener('mousemove', handleMouseMove, false);
 // Add keyboard event listeners for paddle control
 document.addEventListener('keydown', handleKeyDown);
 document.addEventListener('keyup', handleKeyUp);
-
-// Add event listeners for releasing ball
-canvas.addEventListener('click', releaseBall);
-document.addEventListener('keydown', function(e) {
-    // Any key will release the ball
-    releaseBall();
-});
 
 // Add event listener for speed selector
 speedSelector.addEventListener('change', function() {
@@ -1049,7 +1013,67 @@ function animateConfetti() {
     animate();
 }
 
-// Initial Setup - automatically start the game when the page loads
+// Function to freeze the game state
+function freezeGameState() {
+    // Stop the game loop and timer
+    gameRunning = false;
+    cancelAnimationFrame(gameInterval);
+    stopTimer();
+    
+    // Clear the canvas one last time to remove any instructions
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw the final frame without instructions
+    drawGridBackground();
+    drawBricks();
+    drawBall();
+    drawPaddle();
+    drawParticles();
+}
+
+// Function to reset the game
+function resetGame() {
+    // Stop any existing game
+    freezeGameState();
+    
+    // Reset game variables
+    score = 0;
+    lives = INITIAL_LIVES;
+    secondsElapsed = 0;
+    timerStarted = false;
+    gameRunning = false;
+    
+    // Reset ball and paddle positions
+    paddleX = (canvas.width - PADDLE_WIDTH) / 2;
+    ballX = canvas.width / 2;
+    ballY = canvas.height - PADDLE_HEIGHT - BALL_RADIUS - 2;
+    ballStuckToPaddle = true;
+    
+    // Clear the ball trail
+    ballTrail = [];
+    
+    // Reset ball speed based on selector
+    ballBaseSpeed = parseInt(speedSelector.value);
+    ballDX = ballBaseSpeed * (Math.random() < 0.5 ? 1 : -1);
+    ballDY = -ballBaseSpeed;
+    
+    // Update UI
+    scoreElement.textContent = score;
+    timerElement.textContent = secondsElapsed;
+    updateLivesDisplay();
+    
+    // Reinitialize bricks
+    initializeBricks();
+    
+    // Enable speed selector so player can change it before starting
+    speedSelector.disabled = false;
+    
+    // Draw the reset game state (with the start instruction)
+    // This ensures gameRunning is false when drawing the instruction
+    draw();
+}
+
+// Initial Setup - prepare the game but don't start it automatically
 window.addEventListener('load', function() {
     initializeBricks();
     drawBricks();
@@ -1057,6 +1081,6 @@ window.addEventListener('load', function() {
     drawScore();
     drawTimer();
     
-    // Start game automatically after a short delay
-    setTimeout(startGame, 500);
+    // Draw the game in its initial state
+    draw();
 }); 

@@ -306,15 +306,29 @@ canvas {
 }
 
 #restart-button, #play-again-button {
-    background-color: var(--success-color);
+    background-color: #00c2ff;
     color: #0a0e17;
-    box-shadow: 0 0 15px rgba(0, 255, 157, 0.5);
+    box-shadow: 0 0 15px rgba(0, 194, 255, 0.7);
+    padding: 12px 30px;
+    font-size: 1.1em;
+    font-weight: 600;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-radius: 5px;
+    border: none;
+    transition: all 0.2s;
+    margin-top: 10px;
 }
 
 #restart-button:hover, #play-again-button:hover {
-    background-color: #00e88f;
-    box-shadow: 0 0 20px rgba(0, 255, 157, 0.7);
+    background-color: #00e5ff;
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.9);
     transform: translateY(-2px);
+}
+
+#restart-button:active, #play-again-button:active {
+    transform: translateY(1px);
 }
 
 .secondary-button {
@@ -383,20 +397,25 @@ canvas {
     margin-top: 20px;
     text-align: center;
     font-family: 'Orbitron', sans-serif;
-    color: var(--muted-text);
-    font-size: 0.9em;
+    color: var(--primary-color);
+    font-size: 1em;
     letter-spacing: 2px;
     text-transform: uppercase;
-    padding: 10px 0;
+    padding: 15px 0;
     width: 800px;
     margin-left: auto;
     margin-right: auto;
+    position: fixed;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 5;
 }
 
 .game-footer p {
     position: relative;
     display: inline-block;
-    padding: 0 15px;
+    padding: 0 20px;
 }
 
 .game-footer p::before,
@@ -404,22 +423,22 @@ canvas {
     content: '';
     position: absolute;
     top: 50%;
-    width: 30px;
+    width: 40px;
     height: 1px;
     background-color: var(--primary-color);
-    opacity: 0.5;
+    opacity: 0.7;
 }
 
 .game-footer p::before {
-    left: -20px;
+    left: -30px;
 }
 
 .game-footer p::after {
-    right: -20px;
+    right: -30px;
 }
 
 .game-footer p:hover {
-    color: var(--primary-color);
-    text-shadow: var(--glow-small);
+    color: var(--secondary-color);
+    text-shadow: var(--glow-medium);
     transition: all 0.3s ease;
 } 
