@@ -53,11 +53,12 @@ let particles = [];
 const TRAIL_LENGTH = 12; // Increased from 5 to 12 for longer trail
 let ballTrail = [];
 
-// Confetti array and settings
-let confetti = [];
-const CONFETTI_COUNT = 150; // Number of confetti particles
-const CONFETTI_COLORS = ['#00e5ff', '#ff00e5', '#7700ff', '#00ff9d', '#ffff00', '#ff3860'];
-const CONFETTI_SHAPES = ['circle', 'square', 'triangle', 'line'];
+// Cheat code variables
+let cheatCodeBuffer = "";
+let cheatActivated = false;
+let instantWinActivated = false;
+const CHEAT_CODE = "011";
+const INSTANT_WIN_CODE = "033";
 
 // Set Canvas Dimensions (using info bar width as reference)
 canvas.width = 800; // As defined in CSS for #info-bar
@@ -83,11 +84,6 @@ let leftPressed = false; // Track if left key is pressed
 let rightPressed = false; // Track if right key is pressed
 let paddleSpeed = 4; // Reduced from 8 to 4 for lower sensitivity
 let timerStarted = false; // Track if timer has been started
-
-// Cheat code variables
-let cheatCodeBuffer = "";
-let cheatActivated = false;
-const CHEAT_CODE = "011";
 
 // --- Initialization ---
 
@@ -657,6 +653,24 @@ function startGame() {
         
         console.log("Game initialized");
         
+        // Check if instant win mode is activated
+        if (instantWinActivated) {
+            console.log("Instant win activated - winning game immediately");
+            // Make all bricks broken
+            for (let c = 0; c < BRICK_COLUMN_COUNT; c++) {
+                for (let r = 0; r < BRICK_ROW_COUNT; r++) {
+                    bricks[c][r].status = 0;
+                }
+            }
+            // Set score to total brick count
+            score = BRICK_ROW_COUNT * BRICK_COLUMN_COUNT;
+            // Update the score display
+            scoreElement.textContent = score;
+            // Show win screen
+            showWinScreen();
+            return;
+        }
+        
         // Start the game loop without manual drawing
         // Let the game loop handle the first frame completely
         requestAnimationFrame(gameLoop);
@@ -704,9 +718,6 @@ function showWinScreen() {
     
     // Enable speed selector for next game
     speedSelector.disabled = false;
-    
-    // Start confetti animation after 2 seconds
-    setTimeout(createConfetti, 2000);
 }
 
 // Helper function to create the blurred overlay background
@@ -810,7 +821,7 @@ document.addEventListener('keydown', function(e) {
             cheatCodeBuffer = cheatCodeBuffer.substring(cheatCodeBuffer.length - 3);
         }
         
-        // Check if the buffer matches the cheat code
+        // Check if the buffer matches the cheat codes
         if (cheatCodeBuffer === CHEAT_CODE) {
             cheatActivated = !cheatActivated; // Toggle cheat mode
             
@@ -821,6 +832,19 @@ document.addEventListener('keydown', function(e) {
                 ballTrail = []; // Clear any existing trail
             } else {
                 console.log("Cheat mode deactivated");
+            }
+            
+            // Reset buffer after successful activation
+            cheatCodeBuffer = "";
+        }
+        else if (cheatCodeBuffer === INSTANT_WIN_CODE) {
+            instantWinActivated = !instantWinActivated; // Toggle instant win mode
+            
+            // Give visual feedback (in console only, not in UI)
+            if (instantWinActivated) {
+                console.log("🏆 INSTANT WIN ACTIVATED: Game will be won immediately when started 🏆");
+            } else {
+                console.log("Instant win mode deactivated");
             }
             
             // Reset buffer after successful activation
@@ -846,16 +870,8 @@ restartButton.addEventListener('click', function() {
 playAgainButton.addEventListener('click', function() {
     winScreen.style.display = 'none';
     removeOverlayBackground();
-    // Clear confetti
-    confetti = [];
-    // Remove confetti canvas if it exists
-    const confettiCanvas = document.getElementById('confetti-canvas');
-    if (confettiCanvas) {
-        confettiCanvas.remove();
-    }
     startGame();
 });
-// Remove the nextLevelButton event listener since we're no longer using it
 document.addEventListener('mousemove', handleMouseMove, false);
 
 // Add keyboard event listeners for paddle control
@@ -890,223 +906,6 @@ function drawBallTrail() {
         ctx.fill();
         ctx.closePath();
     }
-}
-
-// Function to create confetti
-function createConfetti() {
-    // Clear any existing confetti
-    confetti = [];
-    
-    // Get the win screen dimensions to position confetti around it
-    const winScreenRect = winScreen.getBoundingClientRect();
-    
-    // Create new confetti particles
-    for (let i = 0; i < CONFETTI_COUNT; i++) {
-        // Determine if this confetti should be positioned around the rectangle
-        // Generate confetti around the win screen border
-        const side = Math.floor(Math.random() * 4); // 0: top, 1: right, 2: bottom, 3: left
-        let x, y;
-        
-        const padding = 30; // Padding around the win screen
-        const width = winScreenRect.width + (padding * 2);
-        const height = winScreenRect.height + (padding * 2);
-        const left = winScreenRect.left - padding + window.scrollX;
-        const top = winScreenRect.top - padding + window.scrollY;
-        
-        // Position confetti around the border of win screen
-        switch(side) {
-            case 0: // top
-                x = left + Math.random() * width;
-                y = top - Math.random() * 20;
-                break;
-            case 1: // right
-                x = left + width + Math.random() * 20;
-                y = top + Math.random() * height;
-                break;
-            case 2: // bottom
-                x = left + Math.random() * width;
-                y = top + height + Math.random() * 20;
-                break;
-            case 3: // left
-                x = left - Math.random() * 20;
-                y = top + Math.random() * height;
-                break;
-        }
-        
-        confetti.push({
-            x: x,
-            y: y,
-            size: Math.random() * 5 + 2, // Smaller size (2-7px)
-            color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
-            shape: CONFETTI_SHAPES[Math.floor(Math.random() * CONFETTI_SHAPES.length)],
-            speedX: (Math.random() * 2 - 1) * 1.5, // Reduced horizontal speed
-            speedY: Math.random() * 2 + 1, // Reduced vertical speed
-            rotation: Math.random() * 360,
-            rotationSpeed: (Math.random() * 2 - 1) * 2,
-            gravity: 0.05 + Math.random() * 0.05, // Reduced gravity
-            opacity: 1,
-            life: Math.random() * 150 + 100 // Shorter lifespan
-        });
-    }
-    
-    // Start the confetti animation
-    animateConfetti();
-}
-
-// Function to animate confetti
-function animateConfetti() {
-    // If no confetti or win screen is hidden, stop animation
-    if (confetti.length === 0 || winScreen.style.display === 'none') {
-        return;
-    }
-    
-    // Get the win screen dimensions and position
-    const winScreenRect = winScreen.getBoundingClientRect();
-    
-    // Create a temporary canvas for the confetti
-    const confettiCanvas = document.createElement('canvas');
-    confettiCanvas.width = window.innerWidth;
-    confettiCanvas.height = window.innerHeight;
-    confettiCanvas.style.position = 'fixed';
-    confettiCanvas.style.top = '0';
-    confettiCanvas.style.left = '0';
-    confettiCanvas.style.pointerEvents = 'none'; // Make sure it doesn't block clicks
-    confettiCanvas.style.zIndex = '9'; // Set to 9 so it's below the win screen (which is 10)
-    confettiCanvas.id = 'confetti-canvas';
-    
-    // Remove any existing confetti canvas
-    const existingCanvas = document.getElementById('confetti-canvas');
-    if (existingCanvas) {
-        existingCanvas.remove();
-    }
-    
-    // Add the canvas to the document
-    document.body.appendChild(confettiCanvas);
-    
-    // Get context for drawing
-    const ctx = confettiCanvas.getContext('2d');
-    
-    // Animation function
-    function animate() {
-        // Clear canvas
-        ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
-        
-        // Update and draw confetti
-        for (let i = 0; i < confetti.length; i++) {
-            const p = confetti[i];
-            
-            // Update position
-            p.x += p.speedX;
-            p.y += p.speedY;
-            p.speedY += p.gravity; // Apply gravity
-            p.rotation += p.rotationSpeed;
-            
-            // Reduce life
-            p.life--;
-            
-            // If confetti is too far from win screen or life is over, recycle it
-            const padding = 100; // Max distance from win screen
-            if (p.life <= 0 || 
-                p.x < winScreenRect.left - padding || 
-                p.x > winScreenRect.right + padding || 
-                p.y > winScreenRect.bottom + padding) {
-                
-                if (Math.random() < 0.3) { // 30% chance to remove instead of recycle
-                    confetti.splice(i, 1);
-                    i--;
-                    continue;
-                } else {
-                    // Recycle by putting it back around the win screen
-                    const side = Math.floor(Math.random() * 4);
-                    switch(side) {
-                        case 0: // top
-                            p.x = winScreenRect.left + Math.random() * winScreenRect.width;
-                            p.y = winScreenRect.top - Math.random() * 20;
-                            break;
-                        case 1: // right
-                            p.x = winScreenRect.right + Math.random() * 20;
-                            p.y = winScreenRect.top + Math.random() * winScreenRect.height;
-                            break;
-                        case 2: // bottom
-                            p.x = winScreenRect.left + Math.random() * winScreenRect.width;
-                            p.y = winScreenRect.bottom + Math.random() * 20;
-                            break;
-                        case 3: // left
-                            p.x = winScreenRect.left - Math.random() * 20;
-                            p.y = winScreenRect.top + Math.random() * winScreenRect.height;
-                            break;
-                    }
-                    p.life = Math.random() * 100 + 50;
-                    p.speedY = Math.random() * 2 + 1;
-                }
-            }
-            
-            // Skip drawing if the confetti overlaps with the win screen
-            if (p.x >= winScreenRect.left && p.x <= winScreenRect.right &&
-                p.y >= winScreenRect.top && p.y <= winScreenRect.bottom) {
-                continue; // Skip drawing this confetti piece
-            }
-            
-            // Start fading out as life decreases
-            if (p.life < 30) {
-                p.opacity = p.life / 30;
-            }
-            
-            // Skip drawing if offscreen
-            if (p.x < -10 || p.x > confettiCanvas.width + 10 || 
-                p.y < -10 || p.y > confettiCanvas.height + 10) {
-                continue;
-            }
-            
-            // Draw confetti
-            ctx.save();
-            ctx.translate(p.x, p.y);
-            ctx.rotate(p.rotation * Math.PI / 180);
-            ctx.fillStyle = p.color;
-            ctx.globalAlpha = p.opacity;
-            
-            // Draw different shapes
-            switch (p.shape) {
-                case 'circle':
-                    ctx.beginPath();
-                    ctx.arc(0, 0, p.size, 0, Math.PI * 2);
-                    ctx.fill();
-                    break;
-                case 'square':
-                    ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
-                    break;
-                case 'triangle':
-                    ctx.beginPath();
-                    ctx.moveTo(0, -p.size);
-                    ctx.lineTo(-p.size, p.size);
-                    ctx.lineTo(p.size, p.size);
-                    ctx.closePath();
-                    ctx.fill();
-                    break;
-                case 'line':
-                    ctx.strokeStyle = p.color;
-                    ctx.lineWidth = p.size / 3;
-                    ctx.beginPath();
-                    ctx.moveTo(0, -p.size);
-                    ctx.lineTo(0, p.size);
-                    ctx.stroke();
-                    break;
-            }
-            
-            ctx.restore();
-        }
-        
-        // Continue animation if there's still confetti and win screen is showing
-        if (confetti.length > 0 && winScreen.style.display !== 'none') {
-            requestAnimationFrame(animate);
-        } else {
-            // Remove canvas when done
-            confettiCanvas.remove();
-        }
-    }
-    
-    // Start animation
-    animate();
 }
 
 // Function to freeze the game state
