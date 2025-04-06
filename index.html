@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Breaker</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Game Container -->
+        <div id="game-container">
+            <h1 class="game-title">NEON BREAKER</h1>
+            <div id="info-bar">
+                <div id="left-info">
+                    <div id="lives">
+                        <span>Lives: </span>
+                        <span id="heart-container"></span>
+                    </div>
+                    <div id="speed-control">
+                        <span>Speed: </span>
+                        <select id="speed-selector">
+                            <option value="1" selected>Slow</option>
+                            <option value="2">Medium</option>
+                            <option value="3">Fast</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="center-info">
+                    <div id="timer">Time: <span id="time-value">0</span>s</div>
+                    <div id="score">Score: <span id="score-value">0</span></div>
+                </div>
+                <div id="right-info">
+                    <button id="play-button">Play</button>
+                </div>
+            </div>
+            <canvas id="gameCanvas"></canvas>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="game-over-screen">
+            <h2>Game Over</h2>
+            <div class="result-info">
+                <p>Score: <span id="final-score">0</span></p>
+                <p>Time: <span class="time-display"><span id="final-time">0</span>s</span></p>
+            </div>
+            <button id="restart-button">Restart</button>
+        </div>
+
+        <!-- Win Screen -->
+        <div id="win-screen">
+            <h2>You Win!</h2>
+            <p>Congratulations!</p>
+            <div class="result-info">
+                <p>Score: <span id="win-score">0</span></p>
+                <p>Time: <span class="time-display"><span id="win-time">0</span>s</span></p>
+            </div>
+            <button id="play-again-button">Play Again</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 
