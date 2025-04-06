@@ -270,10 +270,10 @@ canvas {
 
 #win-screen h2 {
     color: var(--success-color);
-    margin-bottom: 10px;
+    margin-bottom: 20px;
     font-size: 2.5em;
     text-shadow: 0 0 15px rgba(0, 255, 157, 0.9);
-    animation: pulseGlow 2s infinite;
+    text-transform: uppercase;
 }
 
 @keyframes pulseGlow {
@@ -321,6 +321,7 @@ canvas {
     font-size: 1.1em;
     font-weight: 600;
     cursor: pointer;
+    font-family: 'Orbitron', sans-serif;
     text-transform: uppercase;
     letter-spacing: 1px;
     border-radius: 5px;
@@ -373,9 +374,9 @@ canvas {
 /* Fix spacing between number and units for both overlays */
 .result-info .time-display {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: flex-end;
-    gap: 0; /* Remove gap completely between number and 's' */
+    gap: 3px; /* Small space between number and 's' */
 }
 
 /* Styling for the unit (s) */
@@ -383,7 +384,7 @@ canvas {
     font-size: 0.8em;
     color: var(--muted-text);
     position: relative;
-    top: -2px;
+    line-height: 1.5; /* Helps with bottom alignment */
 }
 
 .overlay-background {
@@ -455,4 +456,9 @@ canvas {
 #win-screen .result-info span {
     color: white;
     font-weight: bold;
+}
+
+/* Ensure "Score:" text is white in the win screen */
+#win-screen .result-info p {
+    color: white;
 } 

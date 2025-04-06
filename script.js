@@ -84,6 +84,11 @@ let rightPressed = false; // Track if right key is pressed
 let paddleSpeed = 4; // Reduced from 8 to 4 for lower sensitivity
 let timerStarted = false; // Track if timer has been started
 
+// Cheat code variables
+let cheatCodeBuffer = "";
+let cheatActivated = false;
+const CHEAT_CODE = "011";
+
 // --- Initialization ---
 
 function initializeBricks() {
@@ -123,6 +128,11 @@ function initializeGame() {
     timerElement.textContent = secondsElapsed;
     updateLivesDisplay();
     initializeBricks();
+    
+    // Cheat code state persists between game restarts
+    if (cheatActivated) {
+        console.log("Cheat mode active: Ball will penetrate through bricks");
+    }
 }
 
 // --- Drawing Functions ---
@@ -196,20 +206,28 @@ function drawBall() {
         ballX, ballY, 0,
         ballX, ballY, radius
     );
-    ballGradient.addColorStop(0, '#ffffff');
-    ballGradient.addColorStop(0.7, '#ff00e5');
-    ballGradient.addColorStop(1, '#7700ff');
+    
+    // Change ball appearance if cheat is active
+    if (cheatActivated) {
+        ballGradient.addColorStop(0, '#ffffff');
+        ballGradient.addColorStop(0.5, '#ff9500');
+        ballGradient.addColorStop(1, '#ff3860');
+    } else {
+        ballGradient.addColorStop(0, '#ffffff');
+        ballGradient.addColorStop(0.7, '#ff00e5');
+        ballGradient.addColorStop(1, '#7700ff');
+    }
     
     ctx.fillStyle = ballGradient;
     ctx.fill();
     ctx.closePath();
     
     // Add glow effect
-    ctx.shadowColor = '#ff00e5';
-    ctx.shadowBlur = 15;
+    ctx.shadowColor = cheatActivated ? '#ff3860' : '#ff00e5';
+    ctx.shadowBlur = cheatActivated ? 20 : 15;
     ctx.beginPath();
     ctx.arc(ballX, ballY, radius, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255, 0, 229, 0.5)';
+    ctx.fillStyle = cheatActivated ? 'rgba(255, 56, 96, 0.6)' : 'rgba(255, 0, 229, 0.5)';
     ctx.fill();
     ctx.closePath();
     ctx.shadowBlur = 0;
@@ -353,21 +371,24 @@ function collisionDetection() {
                     ballY + BALL_RADIUS > brick.y &&
                     ballY - BALL_RADIUS < brick.y + BRICK_HEIGHT
                 ) {
-                    // Determine which side of the brick was hit
-                    // Calculate distances from ball center to brick edges
-                    const distLeft = Math.abs((ballX + BALL_RADIUS) - brick.x);
-                    const distRight = Math.abs(ballX - BALL_RADIUS - (brick.x + BRICK_WIDTH));
-                    const distTop = Math.abs((ballY + BALL_RADIUS) - brick.y);
-                    const distBottom = Math.abs(ballY - BALL_RADIUS - (brick.y + BRICK_HEIGHT));
-                    
-                    // Find the smallest distance to determine which side was hit
-                    const minDist = Math.min(distLeft, distRight, distTop, distBottom);
-                    
-                    // Reverse appropriate direction based on which side was hit
-                    if (minDist === distLeft || minDist === distRight) {
-                        ballDX = -ballDX; // Horizontal collision (left or right)
-                    } else {
-                        ballDY = -ballDY; // Vertical collision (top or bottom)
+                    // If cheat mode is active, don't bounce the ball, just destroy the brick
+                    if (!cheatActivated) {
+                        // Determine which side of the brick was hit
+                        // Calculate distances from ball center to brick edges
+                        const distLeft = Math.abs((ballX + BALL_RADIUS) - brick.x);
+                        const distRight = Math.abs(ballX - BALL_RADIUS - (brick.x + BRICK_WIDTH));
+                        const distTop = Math.abs((ballY + BALL_RADIUS) - brick.y);
+                        const distBottom = Math.abs(ballY - BALL_RADIUS - (brick.y + BRICK_HEIGHT));
+                        
+                        // Find the smallest distance to determine which side was hit
+                        const minDist = Math.min(distLeft, distRight, distTop, distBottom);
+                        
+                        // Reverse appropriate direction based on which side was hit
+                        if (minDist === distLeft || minDist === distRight) {
+                            ballDX = -ballDX; // Horizontal collision (left or right)
+                        } else {
+                            ballDY = -ballDY; // Vertical collision (top or bottom)
+                        }
                     }
                     
                     brick.status = 0;
@@ -740,7 +761,7 @@ function drawGridBackground() {
 function drawStartInstruction() {
     ctx.save(); // Save the current state
     
-    const text = "CLICK OR PRESS ANY KEY TO START";
+    const text = "CLICK OR PRESS SPACE TO START";
     ctx.font = "18px 'Orbitron'";
     ctx.fillStyle = "#00e5ff";
     ctx.textAlign = "center";
@@ -779,7 +800,36 @@ canvas.addEventListener('click', function(e) {
 
 // Modified key event for cleaner handling
 document.addEventListener('keydown', function(e) {
+    // Only accept cheat code input when game is not running
     if (!gameRunning) {
+        // Add key to buffer
+        cheatCodeBuffer += e.key;
+        
+        // Keep only the last 3 characters
+        if (cheatCodeBuffer.length > 3) {
+            cheatCodeBuffer = cheatCodeBuffer.substring(cheatCodeBuffer.length - 3);
+        }
+        
+        // Check if the buffer matches the cheat code
+        if (cheatCodeBuffer === CHEAT_CODE) {
+            cheatActivated = !cheatActivated; // Toggle cheat mode
+            
+            // Give visual feedback (in console only, not in UI)
+            if (cheatActivated) {
+                console.log("🔥 CHEAT ACTIVATED: Ball will penetrate through bricks 🔥");
+                // Create a subtle visual cue - extra ball glow
+                ballTrail = []; // Clear any existing trail
+            } else {
+                console.log("Cheat mode deactivated");
+            }
+            
+            // Reset buffer after successful activation
+            cheatCodeBuffer = "";
+        }
+    }
+    
+    // Regular key handling for game control - only spacebar starts game
+    if (!gameRunning && e.key === " ") {
         startGame();
     } else if (ballStuckToPaddle) {
         releaseBall();
@@ -921,7 +971,7 @@ function animateConfetti() {
     confettiCanvas.style.top = '0';
     confettiCanvas.style.left = '0';
     confettiCanvas.style.pointerEvents = 'none'; // Make sure it doesn't block clicks
-    confettiCanvas.style.zIndex = '15'; // Above the win screen
+    confettiCanvas.style.zIndex = '9'; // Set to 9 so it's below the win screen (which is 10)
     confettiCanvas.id = 'confetti-canvas';
     
     // Remove any existing confetti canvas
@@ -989,6 +1039,12 @@ function animateConfetti() {
                     p.life = Math.random() * 100 + 50;
                     p.speedY = Math.random() * 2 + 1;
                 }
+            }
+            
+            // Skip drawing if the confetti overlaps with the win screen
+            if (p.x >= winScreenRect.left && p.x <= winScreenRect.right &&
+                p.y >= winScreenRect.top && p.y <= winScreenRect.bottom) {
+                continue; // Skip drawing this confetti piece
             }
             
             // Start fading out as life decreases
@@ -1111,6 +1167,8 @@ function resetGame() {
     // Draw the reset game state (with the start instruction)
     // This ensures gameRunning is false when drawing the instruction
     draw();
+    
+    // Cheat code state persists between game resets
 }
 
 // Initial Setup - prepare the game but don't start it automatically
