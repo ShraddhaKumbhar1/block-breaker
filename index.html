@@ -10,15 +10,33 @@
     <div class="container">
         <!-- Game Container -->
         <div id="game-container">
-            <h1 class="game-title">NEON BREAKER</h1>
+            <div class="game-header">
+                <h1 class="game-title">NEON BREAKER</h1>
+                <div class="game-controls">
+                    <button id="reset-button">Reset</button>
+                </div>
+            </div>
+            
             <div id="info-bar">
                 <div id="left-info">
                     <div id="lives">
-                        <span>Lives: </span>
-                        <span id="heart-container"></span>
+                        <span>Lives</span>
+                        <span id="heart-container" class="value-display"></span>
+                    </div>
+                </div>
+                <div id="center-info">
+                    <div id="score">
+                        <span>Score</span>
+                        <span id="score-value" class="value-display">0</span>
+                    </div>
+                </div>
+                <div id="right-info">
+                    <div id="timer">
+                        <span>Time</span>
+                        <span class="value-display"><span id="time-value">0</span>s</span>
                     </div>
                     <div id="speed-control">
-                        <span>Speed: </span>
+                        <span>Speed</span>
                         <select id="speed-selector">
                             <option value="1" selected>Slow</option>
                             <option value="2">Medium</option>
@@ -26,15 +44,11 @@
                         </select>
                     </div>
                 </div>
-                <div id="center-info">
-                    <div id="timer">Time: <span id="time-value">0</span>s</div>
-                    <div id="score">Score: <span id="score-value">0</span></div>
-                </div>
-                <div id="right-info">
-                    <button id="play-button">Play</button>
-                </div>
             </div>
-            <canvas id="gameCanvas"></canvas>
+            
+            <div class="game-area">
+                <canvas id="gameCanvas"></canvas>
+            </div>
         </div>
 
         <!-- Game Over Screen -->
@@ -44,7 +58,10 @@
                 <p>Score: <span id="final-score">0</span></p>
                 <p>Time: <span class="time-display"><span id="final-time">0</span>s</span></p>
             </div>
-            <button id="restart-button">Restart</button>
+            <div class="modal-controls">
+                <button id="restart-button">Play Again</button>
+                <button id="return-button" class="secondary-button">Return to Menu</button>
+            </div>
         </div>
 
         <!-- Win Screen -->
@@ -55,8 +72,16 @@
                 <p>Score: <span id="win-score">0</span></p>
                 <p>Time: <span class="time-display"><span id="win-time">0</span>s</span></p>
             </div>
-            <button id="play-again-button">Play Again</button>
+            <div class="modal-controls">
+                <button id="play-again-button">Play Again</button>
+                <button id="next-level-button" class="secondary-button">Next Level</button>
+            </div>
         </div>
+        
+        <!-- Footer -->
+        <footer class="game-footer">
+            <p>Made By SK</p>
+        </footer>
     </div>
 
     <script src="script.js"></script>

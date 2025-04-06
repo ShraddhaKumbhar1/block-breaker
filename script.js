@@ -1,4 +1,6 @@
-const playButton = document.getElementById('play-button');
+const resetButton = document.getElementById('reset-button');
+const returnButton = document.getElementById('return-button');
+const nextLevelButton = document.getElementById('next-level-button');
 const gameContainer = document.getElementById('game-container');
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -48,6 +50,16 @@ const HEART_SYMBOL = '♥';
 // Particles array for visual effects
 let particles = [];
 
+// Ball trail array to store previous positions
+const TRAIL_LENGTH = 5; // Number of trail positions to keep
+let ballTrail = [];
+
+// Confetti array and settings
+let confetti = [];
+const CONFETTI_COUNT = 150; // Number of confetti particles
+const CONFETTI_COLORS = ['#00e5ff', '#ff00e5', '#7700ff', '#00ff9d', '#ffff00', '#ff3860'];
+const CONFETTI_SHAPES = ['circle', 'square', 'triangle', 'line'];
+
 // Set Canvas Dimensions (using info bar width as reference)
 canvas.width = 800; // As defined in CSS for #info-bar
 canvas.height = 600;
@@ -71,6 +83,7 @@ let ballStuckToPaddle = true; // Ball starts stuck to paddle
 let leftPressed = false; // Track if left key is pressed
 let rightPressed = false; // Track if right key is pressed
 let paddleSpeed = 4; // Reduced from 8 to 4 for lower sensitivity
+let timerStarted = false; // Track if timer has been started
 
 // --- Initialization ---
 
@@ -156,6 +169,9 @@ function drawPaddle() {
 }
 
 function drawBall() {
+    // Draw ball trail first (so it's behind the ball)
+    drawBallTrail();
+    
     ctx.beginPath();
     
     // If ball is stuck to paddle, add a pulsing effect
@@ -314,6 +330,12 @@ function releaseBall() {
         // Add some horizontal velocity based on position on paddle
         let deltaX = ballX - (paddleX + PADDLE_WIDTH / 2);
         ballDX = deltaX * 0.1; // Smaller value for more controlled start
+        
+        // Start the timer when the ball is first launched
+        if (!timerStarted) {
+            startTimer();
+            timerStarted = true;
+        }
         
         // Add visual feedback when ball is released
         createParticles(ballX, ballY, "#00e5ff");
@@ -502,12 +524,21 @@ function update() {
     
     // Only update ball position if it's not stuck to paddle
     if (!ballStuckToPaddle) {
+        // Store current position in trail before updating
+        if (ballTrail.length >= TRAIL_LENGTH) {
+            ballTrail.shift(); // Remove oldest position
+        }
+        ballTrail.push({x: ballX, y: ballY}); // Add current position
+        
         ballX += ballDX;
         ballY += ballDY;
     } else {
         // Make sure ball stays on paddle
         ballX = paddleX + PADDLE_WIDTH / 2;
         ballY = canvas.height - PADDLE_HEIGHT - BALL_RADIUS - 2;
+        
+        // Clear the trail when ball is stuck to paddle
+        ballTrail = [];
     }
 }
 
@@ -554,17 +585,14 @@ function stopTimer() {
 }
 
 function startGame() {
-    console.log("startGame: Entered");
+    // Freeze the game first
+    freezeGameState();
     
     try {
         if (gameRunning) {
             console.log("Game already running, returning");
             return;
         }
-        
-        // Hide play button during game
-        playButton.disabled = true;
-        playButton.textContent = "Playing...";
         
         // Disable speed selector during gameplay
         speedSelector.disabled = true;
@@ -578,6 +606,12 @@ function startGame() {
         // Initialize game
         initializeGame();
         
+        // Reset timer state
+        stopTimer();
+        secondsElapsed = 0;
+        timerStarted = false;
+        timerElement.textContent = secondsElapsed;
+        
         // Manually draw the first frame
         drawBricks();
         drawBall();
@@ -585,9 +619,8 @@ function startGame() {
         
         console.log("Initial state drawn");
         
-        // Start the game
+        // Start the game (but not the timer yet)
         gameRunning = true;
-        startTimer();
         gameLoop();
     } catch (error) {
         console.error("Error in startGame:", error);
@@ -609,10 +642,6 @@ function endGame() {
     // Show game over screen
     gameOverScreen.style.display = 'block';
     
-    // Re-enable play button
-    playButton.disabled = false;
-    playButton.textContent = "Play";
-    
     // Enable speed selector for next game
     speedSelector.disabled = false;
 }
@@ -628,29 +657,22 @@ function showWinScreen() {
     // Create and add overlay background for blur effect
     createOverlayBackground();
     
-    // Re-enable play button
-    playButton.disabled = false;
-    playButton.textContent = "Play";
-    
-    // Add challenge message if not already at maximum speed
+    // Enable or disable Next Level button based on current speed
     const currentSpeed = parseInt(speedSelector.value);
     if (currentSpeed < 3) {
-        const challengeElement = document.getElementById('challenge-message');
-        if (challengeElement) {
-            challengeElement.style.display = 'block';
-        } else {
-            const challengeMsg = document.createElement('p');
-            challengeMsg.id = 'challenge-message';
-            challengeMsg.innerHTML = `Congratulations! Ready for a challenge? <br>Try a faster speed next time!`;
-            challengeMsg.style.color = '#FFFF00';
-            winScreen.insertBefore(challengeMsg, document.getElementById('play-again-button'));
-        }
+        nextLevelButton.style.display = 'block';
+        nextLevelButton.textContent = `Next Level (Speed ${currentSpeed + 1})`;
+    } else {
+        nextLevelButton.style.display = 'none';
     }
     
     winScreen.style.display = 'block';
     
     // Enable speed selector for next game
     speedSelector.disabled = false;
+    
+    // Start confetti animation after 2 seconds
+    setTimeout(createConfetti, 2000);
 }
 
 // Helper function to create the blurred overlay background
@@ -744,8 +766,48 @@ function freezeGameState() {
     stopTimer();
 }
 
+// Function to reset the game
+function resetGame() {
+    // Stop any existing game
+    freezeGameState();
+    
+    // Reset game variables
+    score = 0;
+    lives = INITIAL_LIVES;
+    secondsElapsed = 0;
+    timerStarted = false;
+    
+    // Reset ball and paddle positions
+    paddleX = (canvas.width - PADDLE_WIDTH) / 2;
+    ballX = canvas.width / 2;
+    ballY = canvas.height - PADDLE_HEIGHT - BALL_RADIUS - 2;
+    ballStuckToPaddle = true;
+    
+    // Clear the ball trail
+    ballTrail = [];
+    
+    // Reset ball speed based on selector
+    ballBaseSpeed = parseInt(speedSelector.value);
+    ballDX = ballBaseSpeed * (Math.random() < 0.5 ? 1 : -1);
+    ballDY = -ballBaseSpeed;
+    
+    // Update UI
+    scoreElement.textContent = score;
+    timerElement.textContent = secondsElapsed;
+    updateLivesDisplay();
+    
+    // Reinitialize bricks
+    initializeBricks();
+    
+    // Draw the reset game state
+    draw();
+    
+    // Start game automatically
+    startGame();
+}
+
 // --- Event Listeners ---
-playButton.addEventListener('click', startGame);
+resetButton.addEventListener('click', resetGame);
 restartButton.addEventListener('click', function() {
     gameOverScreen.style.display = 'none';
     removeOverlayBackground();
@@ -754,6 +816,36 @@ restartButton.addEventListener('click', function() {
 playAgainButton.addEventListener('click', function() {
     winScreen.style.display = 'none';
     removeOverlayBackground();
+    // Clear confetti
+    confetti = [];
+    // Remove confetti canvas if it exists
+    const confettiCanvas = document.getElementById('confetti-canvas');
+    if (confettiCanvas) {
+        confettiCanvas.remove();
+    }
+    startGame();
+});
+returnButton.addEventListener('click', function() {
+    gameOverScreen.style.display = 'none';
+    removeOverlayBackground();
+    resetGame();
+});
+nextLevelButton.addEventListener('click', function() {
+    // In a future version this would load the next level
+    // For now, we'll just increase the speed and restart
+    let currentSpeed = parseInt(speedSelector.value);
+    if (currentSpeed < 3) {
+        speedSelector.value = (currentSpeed + 1).toString();
+    }
+    winScreen.style.display = 'none';
+    removeOverlayBackground();
+    // Clear confetti
+    confetti = [];
+    // Remove confetti canvas if it exists
+    const confettiCanvas = document.getElementById('confetti-canvas');
+    if (confettiCanvas) {
+        confettiCanvas.remove();
+    }
     startGame();
 });
 document.addEventListener('mousemove', handleMouseMove, false);
@@ -775,9 +867,183 @@ speedSelector.addEventListener('change', function() {
     console.log("Speed changed to:", ballBaseSpeed);
 });
 
-// Initial Setup - Draw the canvas and bricks without starting the game
-initializeBricks();
-drawBricks();
-updateLivesDisplay();
-drawScore();
-drawTimer(); 
+// New function to draw the ball trail
+function drawBallTrail() {
+    // Only draw trail if ball is moving (not stuck to paddle)
+    if (ballStuckToPaddle || ballTrail.length === 0) return;
+    
+    // Draw each trail position with decreasing opacity
+    for (let i = 0; i < ballTrail.length; i++) {
+        const pos = ballTrail[i];
+        // Calculate opacity based on position in trail (newer = more opaque)
+        const opacity = 0.6 * (i + 1) / ballTrail.length;
+        const radius = BALL_RADIUS * (0.7 + (i / ballTrail.length) * 0.3);
+        
+        // Draw trail circle
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 0, 229, ${opacity})`;
+        ctx.fill();
+        ctx.closePath();
+    }
+}
+
+// Function to create confetti
+function createConfetti() {
+    // Clear any existing confetti
+    confetti = [];
+    
+    // Create new confetti particles
+    for (let i = 0; i < CONFETTI_COUNT; i++) {
+        confetti.push({
+            x: Math.random() * canvas.width,
+            y: -20 - Math.random() * 100, // Start above the screen
+            size: Math.random() * 8 + 2,
+            color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+            shape: CONFETTI_SHAPES[Math.floor(Math.random() * CONFETTI_SHAPES.length)],
+            speedX: Math.random() * 3 - 1.5, // Random horizontal velocity
+            speedY: Math.random() * 3 + 2, // Downward velocity
+            rotation: Math.random() * 360, // Initial rotation
+            rotationSpeed: (Math.random() * 2 - 1) * 3, // Rotation speed
+            gravity: 0.1 + Math.random() * 0.1,
+            opacity: 1,
+            life: Math.random() * 200 + 150 // How long the confetti will last
+        });
+    }
+    
+    // Start the confetti animation
+    animateConfetti();
+}
+
+// Function to animate confetti
+function animateConfetti() {
+    // If no confetti or win screen is hidden, stop animation
+    if (confetti.length === 0 || winScreen.style.display === 'none') {
+        return;
+    }
+    
+    // Get the win screen dimensions and position
+    const winScreenRect = winScreen.getBoundingClientRect();
+    const canvasRect = canvas.getBoundingClientRect();
+    
+    // Create a temporary canvas for the confetti
+    const confettiCanvas = document.createElement('canvas');
+    confettiCanvas.width = window.innerWidth;
+    confettiCanvas.height = window.innerHeight;
+    confettiCanvas.style.position = 'fixed';
+    confettiCanvas.style.top = '0';
+    confettiCanvas.style.left = '0';
+    confettiCanvas.style.pointerEvents = 'none'; // Make sure it doesn't block clicks
+    confettiCanvas.style.zIndex = '15'; // Above the win screen
+    confettiCanvas.id = 'confetti-canvas';
+    
+    // Remove any existing confetti canvas
+    const existingCanvas = document.getElementById('confetti-canvas');
+    if (existingCanvas) {
+        existingCanvas.remove();
+    }
+    
+    // Add the canvas to the document
+    document.body.appendChild(confettiCanvas);
+    
+    // Get context for drawing
+    const ctx = confettiCanvas.getContext('2d');
+    
+    // Animation function
+    function animate() {
+        // Clear canvas
+        ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+        
+        // Update and draw confetti
+        for (let i = 0; i < confetti.length; i++) {
+            const p = confetti[i];
+            
+            // Update position
+            p.x += p.speedX;
+            p.y += p.speedY;
+            p.speedY += p.gravity; // Apply gravity
+            p.rotation += p.rotationSpeed;
+            
+            // Reduce life
+            p.life--;
+            
+            // If confetti is off-screen or life is over, recycle it
+            if (p.y > confettiCanvas.height + 20 || p.life <= 0) {
+                if (Math.random() < 0.3) { // 30% chance to remove instead of recycle
+                    confetti.splice(i, 1);
+                    i--;
+                    continue;
+                } else {
+                    // Recycle by putting it back at the top
+                    p.y = -20;
+                    p.life = Math.random() * 100 + 50;
+                }
+            }
+            
+            // Start fading out as life decreases
+            if (p.life < 50) {
+                p.opacity = p.life / 50;
+            }
+            
+            // Draw confetti
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rotation * Math.PI / 180);
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = p.opacity;
+            
+            // Draw different shapes
+            switch (p.shape) {
+                case 'circle':
+                    ctx.beginPath();
+                    ctx.arc(0, 0, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    break;
+                case 'square':
+                    ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+                    break;
+                case 'triangle':
+                    ctx.beginPath();
+                    ctx.moveTo(0, -p.size);
+                    ctx.lineTo(-p.size, p.size);
+                    ctx.lineTo(p.size, p.size);
+                    ctx.closePath();
+                    ctx.fill();
+                    break;
+                case 'line':
+                    ctx.strokeStyle = p.color;
+                    ctx.lineWidth = p.size / 3;
+                    ctx.beginPath();
+                    ctx.moveTo(0, -p.size);
+                    ctx.lineTo(0, p.size);
+                    ctx.stroke();
+                    break;
+            }
+            
+            ctx.restore();
+        }
+        
+        // Continue animation if there's still confetti and win screen is showing
+        if (confetti.length > 0 && winScreen.style.display !== 'none') {
+            requestAnimationFrame(animate);
+        } else {
+            // Remove canvas when done
+            confettiCanvas.remove();
+        }
+    }
+    
+    // Start animation
+    animate();
+}
+
+// Initial Setup - automatically start the game when the page loads
+window.addEventListener('load', function() {
+    initializeBricks();
+    drawBricks();
+    updateLivesDisplay();
+    drawScore();
+    drawTimer();
+    
+    // Start game automatically after a short delay
+    setTimeout(startGame, 500);
+}); 
