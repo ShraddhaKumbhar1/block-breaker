@@ -870,21 +870,55 @@ function createConfetti() {
     // Clear any existing confetti
     confetti = [];
     
+    // Get the win screen dimensions to position confetti around it
+    const winScreenRect = winScreen.getBoundingClientRect();
+    
     // Create new confetti particles
     for (let i = 0; i < CONFETTI_COUNT; i++) {
+        // Determine if this confetti should be positioned around the rectangle
+        // Generate confetti around the win screen border
+        const side = Math.floor(Math.random() * 4); // 0: top, 1: right, 2: bottom, 3: left
+        let x, y;
+        
+        const padding = 30; // Padding around the win screen
+        const width = winScreenRect.width + (padding * 2);
+        const height = winScreenRect.height + (padding * 2);
+        const left = winScreenRect.left - padding + window.scrollX;
+        const top = winScreenRect.top - padding + window.scrollY;
+        
+        // Position confetti around the border of win screen
+        switch(side) {
+            case 0: // top
+                x = left + Math.random() * width;
+                y = top - Math.random() * 20;
+                break;
+            case 1: // right
+                x = left + width + Math.random() * 20;
+                y = top + Math.random() * height;
+                break;
+            case 2: // bottom
+                x = left + Math.random() * width;
+                y = top + height + Math.random() * 20;
+                break;
+            case 3: // left
+                x = left - Math.random() * 20;
+                y = top + Math.random() * height;
+                break;
+        }
+        
         confetti.push({
-            x: Math.random() * canvas.width,
-            y: -20 - Math.random() * 100, // Start above the screen
-            size: Math.random() * 8 + 2,
+            x: x,
+            y: y,
+            size: Math.random() * 5 + 2, // Smaller size (2-7px)
             color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
             shape: CONFETTI_SHAPES[Math.floor(Math.random() * CONFETTI_SHAPES.length)],
-            speedX: Math.random() * 3 - 1.5, // Random horizontal velocity
-            speedY: Math.random() * 3 + 2, // Downward velocity
-            rotation: Math.random() * 360, // Initial rotation
-            rotationSpeed: (Math.random() * 2 - 1) * 3, // Rotation speed
-            gravity: 0.1 + Math.random() * 0.1,
+            speedX: (Math.random() * 2 - 1) * 1.5, // Reduced horizontal speed
+            speedY: Math.random() * 2 + 1, // Reduced vertical speed
+            rotation: Math.random() * 360,
+            rotationSpeed: (Math.random() * 2 - 1) * 2,
+            gravity: 0.05 + Math.random() * 0.05, // Reduced gravity
             opacity: 1,
-            life: Math.random() * 200 + 150 // How long the confetti will last
+            life: Math.random() * 150 + 100 // Shorter lifespan
         });
     }
     
@@ -901,7 +935,6 @@ function animateConfetti() {
     
     // Get the win screen dimensions and position
     const winScreenRect = winScreen.getBoundingClientRect();
-    const canvasRect = canvas.getBoundingClientRect();
     
     // Create a temporary canvas for the confetti
     const confettiCanvas = document.createElement('canvas');
@@ -944,22 +977,52 @@ function animateConfetti() {
             // Reduce life
             p.life--;
             
-            // If confetti is off-screen or life is over, recycle it
-            if (p.y > confettiCanvas.height + 20 || p.life <= 0) {
+            // If confetti is too far from win screen or life is over, recycle it
+            const padding = 100; // Max distance from win screen
+            if (p.life <= 0 || 
+                p.x < winScreenRect.left - padding || 
+                p.x > winScreenRect.right + padding || 
+                p.y > winScreenRect.bottom + padding) {
+                
                 if (Math.random() < 0.3) { // 30% chance to remove instead of recycle
                     confetti.splice(i, 1);
                     i--;
                     continue;
                 } else {
-                    // Recycle by putting it back at the top
-                    p.y = -20;
+                    // Recycle by putting it back around the win screen
+                    const side = Math.floor(Math.random() * 4);
+                    switch(side) {
+                        case 0: // top
+                            p.x = winScreenRect.left + Math.random() * winScreenRect.width;
+                            p.y = winScreenRect.top - Math.random() * 20;
+                            break;
+                        case 1: // right
+                            p.x = winScreenRect.right + Math.random() * 20;
+                            p.y = winScreenRect.top + Math.random() * winScreenRect.height;
+                            break;
+                        case 2: // bottom
+                            p.x = winScreenRect.left + Math.random() * winScreenRect.width;
+                            p.y = winScreenRect.bottom + Math.random() * 20;
+                            break;
+                        case 3: // left
+                            p.x = winScreenRect.left - Math.random() * 20;
+                            p.y = winScreenRect.top + Math.random() * winScreenRect.height;
+                            break;
+                    }
                     p.life = Math.random() * 100 + 50;
+                    p.speedY = Math.random() * 2 + 1;
                 }
             }
             
             // Start fading out as life decreases
-            if (p.life < 50) {
-                p.opacity = p.life / 50;
+            if (p.life < 30) {
+                p.opacity = p.life / 30;
+            }
+            
+            // Skip drawing if offscreen
+            if (p.x < -10 || p.x > confettiCanvas.width + 10 || 
+                p.y < -10 || p.y > confettiCanvas.height + 10) {
+                continue;
             }
             
             // Draw confetti

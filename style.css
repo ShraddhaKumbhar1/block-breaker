@@ -253,9 +253,9 @@ canvas {
 }
 
 #win-screen {
-    background-color: rgba(20, 27, 45, 0.9);
-    border: 2px solid var(--success-color);
-    box-shadow: 0 0 20px rgba(0, 255, 157, 0.5);
+    background-color: rgba(0, 0, 0, 0.9);
+    border: 3px solid var(--success-color);
+    box-shadow: 0 0 30px rgba(0, 255, 157, 0.8), inset 0 0 15px rgba(0, 255, 157, 0.4);
 }
 
 #game-over-screen h2 {
@@ -267,11 +267,17 @@ canvas {
 }
 
 #win-screen h2 {
-    margin-bottom: 20px;
     color: var(--success-color);
-    text-shadow: 0 0 10px rgba(0, 255, 157, 0.7);
-    font-size: 2.2em;
-    text-transform: uppercase;
+    margin-bottom: 10px;
+    font-size: 2.5em;
+    text-shadow: 0 0 15px rgba(0, 255, 157, 0.9);
+    animation: pulseGlow 2s infinite;
+}
+
+@keyframes pulseGlow {
+    0% { text-shadow: 0 0 15px rgba(0, 255, 157, 0.9); }
+    50% { text-shadow: 0 0 25px rgba(0, 255, 157, 1), 0 0 35px rgba(0, 255, 157, 0.6); }
+    100% { text-shadow: 0 0 15px rgba(0, 255, 157, 0.9); }
 }
 
 #game-over-screen p, #win-screen p {
