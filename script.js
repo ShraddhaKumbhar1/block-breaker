@@ -51,7 +51,7 @@ const HEART_SYMBOL = '♥';
 let particles = [];
 
 // Ball trail array to store previous positions
-const TRAIL_LENGTH = 5; // Number of trail positions to keep
+const TRAIL_LENGTH = 12; // Increased from 5 to 12 for longer trail
 let ballTrail = [];
 
 // Confetti array and settings
@@ -525,10 +525,20 @@ function update() {
     // Only update ball position if it's not stuck to paddle
     if (!ballStuckToPaddle) {
         // Store current position in trail before updating
-        if (ballTrail.length >= TRAIL_LENGTH) {
-            ballTrail.shift(); // Remove oldest position
+        // Only store every other position to make trail more spaced out
+        // This reduces visual clutter and potential motion sickness
+        if (gameRunning) {
+            if (ballTrail.length >= TRAIL_LENGTH) {
+                ballTrail.shift(); // Remove oldest position
+            }
+            
+            // Only add a new position if we've moved significantly or every few frames
+            if (ballTrail.length === 0 || 
+                Math.abs(ballX - ballTrail[ballTrail.length-1].x) > 2 ||
+                Math.abs(ballY - ballTrail[ballTrail.length-1].y) > 2) {
+                ballTrail.push({x: ballX, y: ballY}); // Add current position
+            }
         }
-        ballTrail.push({x: ballX, y: ballY}); // Add current position
         
         ballX += ballDX;
         ballY += ballDY;
@@ -876,13 +886,16 @@ function drawBallTrail() {
     for (let i = 0; i < ballTrail.length; i++) {
         const pos = ballTrail[i];
         // Calculate opacity based on position in trail (newer = more opaque)
-        const opacity = 0.6 * (i + 1) / ballTrail.length;
-        const radius = BALL_RADIUS * (0.7 + (i / ballTrail.length) * 0.3);
+        // Reduced maximum opacity from 0.6 to 0.3 for a lighter effect
+        const opacity = 0.3 * (i + 1) / ballTrail.length;
+        // Make trail slightly smaller than ball for less visual noise
+        const radius = BALL_RADIUS * (0.5 + (i / ballTrail.length) * 0.3);
         
         // Draw trail circle
         ctx.beginPath();
         ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 0, 229, ${opacity})`;
+        // Using a lighter color for less visual intensity
+        ctx.fillStyle = `rgba(255, 130, 240, ${opacity})`;
         ctx.fill();
         ctx.closePath();
     }

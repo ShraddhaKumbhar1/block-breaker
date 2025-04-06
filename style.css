@@ -379,6 +379,10 @@ canvas {
     font-size: 0.9em;
     letter-spacing: 2px;
     text-transform: uppercase;
+    padding: 10px 0;
+    width: 800px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .game-footer p {
