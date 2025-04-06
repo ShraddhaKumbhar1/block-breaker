@@ -353,7 +353,15 @@ canvas {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 0; /* No gap between number and 's' */
+    gap: 4px; /* Small gap between number and 's' */
+}
+
+/* Styling for the unit (s) */
+.unit {
+    font-size: 0.7em;
+    color: var(--muted-text);
+    position: relative;
+    top: -2px;
 }
 
 .overlay-background {
