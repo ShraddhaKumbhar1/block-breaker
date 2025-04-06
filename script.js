@@ -676,14 +676,8 @@ function showWinScreen() {
     // Create and add overlay background for blur effect
     createOverlayBackground();
     
-    // Enable or disable Next Level button based on current speed
-    const currentSpeed = parseInt(speedSelector.value);
-    if (currentSpeed < 3) {
-        nextLevelButton.style.display = 'block';
-        nextLevelButton.textContent = `Next Level (Speed ${currentSpeed + 1})`;
-    } else {
-        nextLevelButton.style.display = 'none';
-    }
+    // Hide the Next Level button completely
+    nextLevelButton.style.display = 'none';
     
     winScreen.style.display = 'block';
     
@@ -811,24 +805,7 @@ playAgainButton.addEventListener('click', function() {
     }
     startGame();
 });
-nextLevelButton.addEventListener('click', function() {
-    // In a future version this would load the next level
-    // For now, we'll just increase the speed and restart
-    let currentSpeed = parseInt(speedSelector.value);
-    if (currentSpeed < 3) {
-        speedSelector.value = (currentSpeed + 1).toString();
-    }
-    winScreen.style.display = 'none';
-    removeOverlayBackground();
-    // Clear confetti
-    confetti = [];
-    // Remove confetti canvas if it exists
-    const confettiCanvas = document.getElementById('confetti-canvas');
-    if (confettiCanvas) {
-        confettiCanvas.remove();
-    }
-    startGame();
-});
+// Remove the nextLevelButton event listener since we're no longer using it
 document.addEventListener('mousemove', handleMouseMove, false);
 
 // Add keyboard event listeners for paddle control

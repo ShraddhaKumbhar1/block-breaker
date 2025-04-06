@@ -233,6 +233,7 @@ canvas {
     font-family: 'Orbitron', sans-serif;
     animation: fadeIn 0.3s ease-out;
     min-width: 350px;
+    background-color: rgba(0, 0, 0, 0.9);
     box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
 }
 
@@ -247,23 +248,24 @@ canvas {
 }
 
 #game-over-screen {
-    background-color: rgba(20, 27, 45, 0.9);
     border: 2px solid var(--danger-color);
-    box-shadow: 0 0 20px rgba(255, 56, 96, 0.5);
+    box-shadow: 0 0 20px rgba(255, 56, 96, 0.5), inset 0 0 15px rgba(255, 56, 96, 0.3);
 }
 
 #win-screen {
-    background-color: rgba(0, 0, 0, 0.9);
     border: 3px solid var(--success-color);
     box-shadow: 0 0 30px rgba(0, 255, 157, 0.8), inset 0 0 15px rgba(0, 255, 157, 0.4);
 }
 
-#game-over-screen h2 {
+#game-over-screen h2, #win-screen h2 {
     margin-bottom: 20px;
+    font-size: 2.5em;
+    text-transform: uppercase;
+}
+
+#game-over-screen h2 {
     color: var(--danger-color);
     text-shadow: 0 0 10px rgba(255, 56, 96, 0.7);
-    font-size: 2.2em;
-    text-transform: uppercase;
 }
 
 #win-screen h2 {
@@ -368,17 +370,17 @@ canvas {
     font-weight: bold;
 }
 
-/* Fix spacing between number and units */
+/* Fix spacing between number and units for both overlays */
 .result-info .time-display {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 4px; /* Small gap between number and 's' */
+    gap: 0; /* Remove gap completely between number and 's' */
 }
 
 /* Styling for the unit (s) */
 .unit {
-    font-size: 0.7em;
+    font-size: 0.8em;
     color: var(--muted-text);
     position: relative;
     top: -2px;
@@ -447,4 +449,10 @@ canvas {
     color: var(--secondary-color);
     text-shadow: var(--glow-medium);
     transition: all 0.3s ease;
+}
+
+/* Make score color white in win screen */
+#win-screen .result-info span {
+    color: white;
+    font-weight: bold;
 } 
